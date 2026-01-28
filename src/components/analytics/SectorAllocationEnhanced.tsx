@@ -7,11 +7,17 @@ import {
     Cell,
     Sector,
     ResponsiveContainer,
-    Tooltip,
+    Tooltip as RechartsTooltip,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
     Table,
     TableBody,
@@ -30,7 +36,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { getSector, sectorColors, type Sector as SectorType } from "@/lib/sectors";
 import type { Holding, SectorData } from "@/lib/types";
-import { cn, formatCurrency, formatPercentage } from "@/lib/utils";
+import { cn, formatCurrency, formatPercentage, formatQuantity } from "@/lib/utils";
 import {
     ArrowUpRight,
     ArrowDownRight,
@@ -218,7 +224,7 @@ export function SectorAllocation({ holdings, assetTypeFilter = "all" }: SectorAl
                                         <Cell key={`cell-${index}`} fill={entry.color} />
                                     ))}
                                 </Pie>
-                                <Tooltip
+                                <RechartsTooltip
                                     content={
                                         <ChartTooltipContent
                                             formatter={(value, name) => (
@@ -311,7 +317,7 @@ export function SectorAllocation({ holdings, assetTypeFilter = "all" }: SectorAl
 
             {/* Sector Detail Dialog */}
             <Dialog open={!!selectedSector} onOpenChange={(open) => !open && setSelectedSector(null)}>
-                <DialogContent className="max-w-3xl max-h-[85vh]">
+                <DialogContent className="max-w-5xl max-h-[85vh]">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-3">
                             <div
@@ -396,15 +402,28 @@ export function SectorAllocation({ holdings, assetTypeFilter = "all" }: SectorAl
                                                 >
                                                     <TableCell className="font-semibold">
                                                         <div className="flex items-center gap-2">
-                                                            {holding.tradingsymbol}
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <span className="truncate max-w-[180px]">
+                                                                            {holding.tradingsymbol}
+                                                                        </span>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>{holding.tradingsymbol}</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
                                                             {holding.pnl >= 0 ? (
-                                                                <ArrowUpRight className="h-3 w-3 text-green-600" />
+                                                                <ArrowUpRight className="h-3 w-3 text-green-600 flex-shrink-0" />
                                                             ) : (
-                                                                <ArrowDownRight className="h-3 w-3 text-red-600" />
+                                                                <ArrowDownRight className="h-3 w-3 text-red-600 flex-shrink-0" />
                                                             )}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="text-right">{holding.quantity}</TableCell>
+                                                    <TableCell className="text-right whitespace-nowrap">
+                                                        {formatQuantity(holding.quantity)}
+                                                    </TableCell>
                                                     <TableCell className="text-right">
                                                         {formatCurrency(holding.average_price)}
                                                     </TableCell>

@@ -405,14 +405,12 @@ export async function POST(request: Request) {
         const prompt = createAnalysisPrompt(holdings);
 
         const response = await ai.models.generateContent({
-            model: "gemini-3-pro-preview",
+            model: "gemini-2.0-flash",
             contents: prompt,
             config: {
                 tools: [
                     { googleSearch: {} }
                 ],
-                responseMimeType: "application/json",
-                responseJsonSchema: zodToJsonSchema(analysisSchema),
             },
         });
 
@@ -424,9 +422,7 @@ export async function POST(request: Request) {
             );
         }
 
-        const parsed = analysisSchema.parse(JSON.parse(responseText));
-
-        return NextResponse.json({ analysis: parsed.analysis });
+        return NextResponse.json({ analysis: responseText });
     } catch (error) {
         console.error("Analysis error:", error);
         return NextResponse.json(

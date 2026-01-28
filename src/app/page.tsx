@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   PieChart,
@@ -232,7 +233,10 @@ export default function Dashboard() {
                 variant={assetTypeFilter === "all" ? "secondary" : "ghost"}
                 size="sm"
                 onClick={() => setAssetTypeFilter("all")}
-                className="gap-2"
+                className={cn(
+                  "gap-2 transition-all",
+                  assetTypeFilter === "all" && "bg-primary/10 text-primary border-primary dark:bg-primary/20 font-semibold"
+                )}
               >
                 <Layers className="h-4 w-4" />
                 All
@@ -244,7 +248,10 @@ export default function Dashboard() {
                 variant={assetTypeFilter === "equity" ? "secondary" : "ghost"}
                 size="sm"
                 onClick={() => setAssetTypeFilter("equity")}
-                className="gap-2"
+                className={cn(
+                  "gap-2 transition-all",
+                  assetTypeFilter === "equity" && "bg-primary/10 text-primary border-primary dark:bg-primary/20 font-semibold"
+                )}
               >
                 <Briefcase className="h-4 w-4" />
                 Stocks
@@ -256,7 +263,10 @@ export default function Dashboard() {
                 variant={assetTypeFilter === "mf" ? "secondary" : "ghost"}
                 size="sm"
                 onClick={() => setAssetTypeFilter("mf")}
-                className="gap-2"
+                className={cn(
+                  "gap-2 transition-all",
+                  assetTypeFilter === "mf" && "bg-primary/10 text-primary border-primary dark:bg-primary/20 font-semibold"
+                )}
               >
                 <LineChart className="h-4 w-4" />
                 Mutual Funds
@@ -274,10 +284,10 @@ export default function Dashboard() {
               <LayoutDashboard className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
-            <TabsTrigger value="ai" className="gap-2">
+            {/* <TabsTrigger value="ai" className="gap-2">
               <Brain className="h-4 w-4" />
               <span className="hidden sm:inline">AI Analysis</span>
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger value="sectors" className="gap-2">
               <PieChart className="h-4 w-4" />
               <span className="hidden sm:inline">Sectors</span>

@@ -43,3 +43,12 @@ export function formatIndianNumber(value: number): string {
   }
   return `${sign}₹${absValue.toFixed(2)}`;
 }
+
+/**
+ * Format quantity with appropriate decimal places
+ */
+export function formatQuantity(value: number): string {
+  return new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 3,
+  }).format(value);
+}

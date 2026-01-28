@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import type { Holding } from "@/lib/types";
 import { getSector, sectorColors, type Sector } from "@/lib/sectors";
-import { cn, formatCurrency, formatPercentage } from "@/lib/utils";
+import { cn, formatCurrency, formatPercentage, formatQuantity } from "@/lib/utils";
 
 interface StockDetailModalProps {
     holding: Holding | null;
@@ -115,7 +115,7 @@ export function StockDetailModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-3">
                         <span className="text-2xl">{holding.tradingsymbol}</span>
@@ -136,7 +136,7 @@ export function StockDetailModal({
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                         <div className="rounded-lg border bg-muted/50 p-3">
                             <div className="text-muted-foreground text-xs">Qty</div>
-                            <div className="font-semibold">{holding.quantity}</div>
+                            <div className="font-semibold">{formatQuantity(holding.quantity)}</div>
                         </div>
                         <div className="rounded-lg border bg-muted/50 p-3">
                             <div className="text-muted-foreground text-xs">Avg Price</div>
