@@ -1,0 +1,5 @@
+- [ ] Project scaffolded with Next.js, TypeScript, Tailwind CSS, shadcn/ui
+- [ ] Add data integration for Zerodha (Kite, Coin) and Vested
+- [ ] Implement analytics, filters, and AI analysis
+- [ ] No authentication, local use only
+- [ ] Beautiful dashboard UI

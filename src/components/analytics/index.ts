@@ -1,0 +1,12 @@
+export { SectorAllocation } from "./SectorAllocationEnhanced";
+export { TopMovers } from "./TopMovers";
+export { PortfolioMetrics } from "./PortfolioMetrics";
+export { HoldingsHeatmap } from "./HoldingsHeatmap";
+export { PerformanceComparison } from "./PerformanceComparison";
+export { DiversificationRadar } from "./DiversificationRadar";
+export { HoldingsTable } from "./HoldingsTableEnhanced";
+export { StockDetailModal } from "./StockDetailModal";
+export { RiskAnalysis } from "./RiskAnalysis";
+export { InvestmentInsights } from "./InvestmentInsights";
+export { CostBasisAnalysis } from "./CostBasisAnalysis";
+export { AIAnalysis } from "./AIAnalysis";
