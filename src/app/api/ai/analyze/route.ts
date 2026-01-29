@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
@@ -401,20 +401,56 @@ export async function POST(request: Request) {
             );
         }
 
-        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-        const prompt = createAnalysisPrompt(holdings);
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-        const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash",
-            contents: prompt,
-            config: {
-                tools: [
-                    { googleSearch: {} }
-                ],
-            },
+        // Initialize the model with specific capabilities (Tools & System Instructions)
+        const model = genAI.getGenerativeModel({
+            model: "gemini-3-pro-preview",
+
+            // 1. Setup Grounding (Google Search)
+            tools: [
+                { googleSearch: {} }
+            ],
+
+            // 2. Setup Deep Research Persona
+            systemInstruction: {
+                role: "system",
+                parts: [{
+                    text: `You are an advanced AI Analyst capable of "Deep Research". 
+                    
+                    Operational Protocols:
+                    1. THINKING: Before answering, strictly use your thinking process to outline a research strategy.
+                    2. GROUNDING: Verify every factual claim using Google Search. Do not rely on internal knowledge for data, news, or stock prices.
+                    3. ITERATION: If a search result is ambiguous, perform a follow-up search to clarify.
+                    4. SYNTHESIS: Provide a final answer that cites the sources found during the grounding process.`
+                }]
+            }
         });
 
-        const responseText = response.text;
+        const prompt = createAnalysisPrompt(holdings);
+
+        const response = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+
+            // 3. Configure Reasoning & Retrieval
+            generationConfig: {
+                // Enable the "Thinking" process (visible in response.candidates[0].content.parts)
+                thinkingConfig: {
+                    includeThoughts: true
+                },
+                // Adjust temperature for more analytical output
+                temperature: 0.2,
+            },
+
+            // Dynamic retrieval configuration
+            toolConfig: {
+                functionCallingConfig: {
+                    mode: "AUTO"
+                }
+            }
+        });
+
+        const responseText = response.response.text();
         if (!responseText) {
             return NextResponse.json(
                 { error: "No response from Gemini API" },

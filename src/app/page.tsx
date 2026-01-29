@@ -284,10 +284,10 @@ export default function Dashboard() {
               <LayoutDashboard className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
-            {/* <TabsTrigger value="ai" className="gap-2">
+            <TabsTrigger value="ai" className="gap-2">
               <Brain className="h-4 w-4" />
               <span className="hidden sm:inline">AI Analysis</span>
-            </TabsTrigger> */}
+            </TabsTrigger>
             <TabsTrigger value="sectors" className="gap-2">
               <PieChart className="h-4 w-4" />
               <span className="hidden sm:inline">Sectors</span>
