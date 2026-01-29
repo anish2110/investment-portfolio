@@ -10,3 +10,4 @@ export { RiskAnalysis } from "./RiskAnalysis";
 export { InvestmentInsights } from "./InvestmentInsights";
 export { CostBasisAnalysis } from "./CostBasisAnalysis";
 export { AIAnalysis } from "./AIAnalysis";
+export { AnalysisHistory } from "./AnalysisHistory";

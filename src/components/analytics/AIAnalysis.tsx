@@ -18,8 +18,10 @@ import {
     Newspaper,
     BarChart3,
     Target,
+    Download,
 } from "lucide-react";
 import type { Holding } from "@/lib/types";
+import { AnalysisHistory } from "./AnalysisHistory";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -32,6 +34,43 @@ export function AIAnalysis({ holdings }: AIAnalysisProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [analysis, setAnalysis] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
+
+    const saveAnalysis = async (content: string) => {
+        try {
+            setSaving(true);
+            const response = await fetch("/api/ai/history", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ content }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to save analysis");
+            }
+
+            return true;
+        } catch (err) {
+            console.error("Error saving analysis:", err);
+            return false;
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const downloadAnalysis = () => {
+        if (!analysis) return;
+
+        const element = document.createElement("a");
+        const file = new Blob([analysis], { type: "text/markdown" });
+        element.href = URL.createObjectURL(file);
+        element.download = `analysis-${new Date().getTime()}.md`;
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+    };
 
     const runAnalysis = async () => {
         try {
@@ -56,6 +95,8 @@ export function AIAnalysis({ holdings }: AIAnalysisProps) {
 
             if (data.analysis) {
                 setAnalysis(data.analysis);
+                // Auto-save the analysis
+                await saveAnalysis(data.analysis);
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : "An error occurred");
@@ -85,28 +126,31 @@ export function AIAnalysis({ holdings }: AIAnalysisProps) {
                             </CardDescription>
                         </div>
                     </div>
-                    <Button
-                        onClick={runAnalysis}
-                        disabled={loading}
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Analyzing...
-                            </>
-                        ) : analysis ? (
-                            <>
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                                Re-analyze
-                            </>
-                        ) : (
-                            <>
-                                <Sparkles className="mr-2 h-4 w-4" />
-                                Run Deep Analysis
-                            </>
-                        )}
-                    </Button>
+                    <div className="flex gap-3 items-center">
+                        <AnalysisHistory />
+                        <Button
+                            onClick={runAnalysis}
+                            disabled={loading || saving}
+                            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 whitespace-nowrap"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Analyzing...
+                                </>
+                            ) : analysis ? (
+                                <>
+                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                    Re-analyze
+                                </>
+                            ) : (
+                                <>
+                                    <Sparkles className="mr-2 h-4 w-4" />
+                                    Run Deep Analysis
+                                </>
+                            )}
+                        </Button>
+                    </div>
                 </div>
             </CardHeader>
 
@@ -170,33 +214,46 @@ export function AIAnalysis({ holdings }: AIAnalysisProps) {
                 )}
 
                 {analysis && (
-                    <ScrollArea className="h-[600px] pr-4">
-                        <div className="markdown-prose">
-                            <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                components={{
-                                    h1: (props) => <h1 className="text-2xl font-bold mb-4 mt-6 first:mt-0" {...props} />,
-                                    h2: (props) => <h2 className="text-xl font-semibold mb-3 mt-5 px-2 py-1 bg-muted/50 rounded-md border-l-4 border-purple-500" {...props} />,
-                                    h3: (props) => <h3 className="text-lg font-medium mb-2 mt-4 text-purple-600 dark:text-purple-400" {...props} />,
-                                    p: (props) => <p className="mb-3 text-muted-foreground leading-relaxed" {...props} />,
-                                    ul: (props) => <ul className="list-disc pl-5 mb-4 space-y-1 text-muted-foreground" {...props} />,
-                                    ol: (props) => <ol className="list-decimal pl-5 mb-4 space-y-1 text-muted-foreground" {...props} />,
-                                    li: (props) => <li className="pl-1" {...props} />,
-                                    strong: (props) => <strong className="font-semibold text-foreground" {...props} />,
-                                    blockquote: (props) => <blockquote className="border-l-4 border-muted pl-4 italic text-muted-foreground my-4" {...props} />,
-                                    table: (props) => <div className="overflow-x-auto my-4 rounded-lg border"><table className="w-full text-sm" {...props} /></div>,
-                                    thead: (props) => <thead className="bg-muted text-muted-foreground font-medium" {...props} />,
-                                    tbody: (props) => <tbody className="divide-y" {...props} />,
-                                    tr: (props) => <tr className="hover:bg-muted/50 transition-colors" {...props} />,
-                                    th: (props) => <th className="p-3 text-left font-medium" {...props} />,
-                                    td: (props) => <td className="p-3 align-top" {...props} />,
-                                    code: (props) => <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props} />,
-                                }}
+                    <div className="flex flex-col h-[600px]">
+                        <div className="flex justify-end mb-3 pb-3 border-b">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={downloadAnalysis}
+                                className="gap-2"
                             >
-                                {analysis}
-                            </ReactMarkdown>
+                                <Download className="h-4 w-4" />
+                                Download
+                            </Button>
                         </div>
-                    </ScrollArea>
+                        <ScrollArea className="flex-1 pr-4">
+                            <div className="markdown-prose">
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                        h1: (props) => <h1 className="text-2xl font-bold mb-4 mt-6 first:mt-0" {...props} />,
+                                        h2: (props) => <h2 className="text-xl font-semibold mb-3 mt-5 px-2 py-1 bg-muted/50 rounded-md border-l-4 border-purple-500" {...props} />,
+                                        h3: (props) => <h3 className="text-lg font-medium mb-2 mt-4 text-purple-600 dark:text-purple-400" {...props} />,
+                                        p: (props) => <p className="mb-3 text-muted-foreground leading-relaxed" {...props} />,
+                                        ul: (props) => <ul className="list-disc pl-5 mb-4 space-y-1 text-muted-foreground" {...props} />,
+                                        ol: (props) => <ol className="list-decimal pl-5 mb-4 space-y-1 text-muted-foreground" {...props} />,
+                                        li: (props) => <li className="pl-1" {...props} />,
+                                        strong: (props) => <strong className="font-semibold text-foreground" {...props} />,
+                                        blockquote: (props) => <blockquote className="border-l-4 border-muted pl-4 italic text-muted-foreground my-4" {...props} />,
+                                        table: (props) => <div className="overflow-x-auto my-4 rounded-lg border"><table className="w-full text-sm" {...props} /></div>,
+                                        thead: (props) => <thead className="bg-muted text-muted-foreground font-medium" {...props} />,
+                                        tbody: (props) => <tbody className="divide-y" {...props} />,
+                                        tr: (props) => <tr className="hover:bg-muted/50 transition-colors" {...props} />,
+                                        th: (props) => <th className="p-3 text-left font-medium" {...props} />,
+                                        td: (props) => <td className="p-3 align-top" {...props} />,
+                                        code: (props) => <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props} />,
+                                    }}
+                                >
+                                    {analysis}
+                                </ReactMarkdown>
+                            </div>
+                        </ScrollArea>
+                    </div>
                 )}
             </CardContent>
         </Card>

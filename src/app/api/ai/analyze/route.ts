@@ -409,6 +409,7 @@ export async function POST(request: Request) {
 
             // 1. Setup Grounding (Google Search)
             tools: [
+                //@ts-ignore
                 { googleSearch: {} }
             ],
 
@@ -435,6 +436,7 @@ export async function POST(request: Request) {
             // 3. Configure Reasoning & Retrieval
             generationConfig: {
                 // Enable the "Thinking" process (visible in response.candidates[0].content.parts)
+                //@ts-ignore
                 thinkingConfig: {
                     includeThoughts: true
                 },

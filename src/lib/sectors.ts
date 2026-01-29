@@ -200,6 +200,7 @@ const sectorMapping: Record<string, Sector> = {
     SCHAEFFLER: "Auto",
     SKFINDIA: "Auto",
     TIMKEN: "Auto",
+    TMCV: "Auto",
 
     // Metals & Mining
     TATASTEEL: "Metals",
@@ -222,6 +223,9 @@ const sectorMapping: Record<string, Sector> = {
     HLEGLAS: "Metals",
     ORIENTCEM: "Metals",
     SHYAMMETL: "Metals",
+    HINDCOPPER: "Metals",
+    SILVER: "Metals",
+    GOLD1: "Metals",
 
     // Energy / Oil & Gas
     RELIANCE: "Energy",
