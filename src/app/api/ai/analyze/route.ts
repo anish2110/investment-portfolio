@@ -49,9 +49,40 @@ const createAnalysisPrompt = (holdings: Holding[]) => {
         day: 'numeric'
     });
 
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().toLocaleDateString('en-IN', { month: 'long' });
+    const currentDay = new Date().getDate();
+
     return `
 # ELITE PORTFOLIO INTELLIGENCE BRIEFING
 **Analysis Date:** ${currentDate}
+
+---
+
+## ⚠️ CRITICAL DATE & DATA INSTRUCTIONS - READ FIRST ⚠️
+
+**TODAY'S DATE IS: ${currentDate} (Year: ${currentYear})**
+
+🚨 **MANDATORY WEB SEARCH REQUIREMENT** 🚨
+
+You MUST use Google Search for EVERY piece of market data, news, and analysis. Your training data is OUTDATED.
+
+**BEFORE WRITING ANYTHING:**
+1. Search for "India stock market news ${currentMonth} ${currentYear}" 
+2. Search for "Nifty 50 current level ${currentMonth} ${currentDay} ${currentYear}"
+3. Search for "RBI interest rate ${currentYear}"
+4. Search for "India VIX today ${currentMonth} ${currentYear}"
+5. Search for each stock ticker + "latest news ${currentMonth} ${currentYear}"
+
+**STRICT RULES:**
+- ❌ DO NOT use any data from 2024 or earlier - that is STALE
+- ❌ DO NOT hallucinate or imagine market conditions
+- ❌ DO NOT say "as of my knowledge cutoff" - USE SEARCH instead
+- ✅ ALWAYS search for current ${currentYear} data
+- ✅ CITE the actual sources and dates from your searches
+- ✅ If search returns no results, explicitly state "No current data found for [X]"
+
+**The user's portfolio needs analysis based on CURRENT ${currentYear} market conditions, NOT historical data.**
 
 ---
 
@@ -86,9 +117,16 @@ Conduct an exhaustive, institutional-grade analysis of the user's investment por
 
 ## 📊 PHASE 1: COMPREHENSIVE MARKET RECONNAISSANCE
 
-*You MUST research and analyze the following before evaluating the portfolio:*
+*You MUST use Google Search to research and analyze the following before evaluating the portfolio:*
+*⚠️ ALL DATA MUST BE FROM ${currentYear} - Search for each item explicitly!*
 
 ### 1.1 Global Macroeconomic Environment
+**REQUIRED SEARCHES:**
+- "RBI monetary policy ${currentMonth} ${currentYear}"
+- "Federal Reserve interest rate ${currentMonth} ${currentYear}"  
+- "India inflation rate ${currentMonth} ${currentYear}"
+- "USD INR exchange rate ${currentMonth} ${currentYear}"
+
 - **Interest Rate Environment:** Current stance of RBI, Federal Reserve, ECB, and BoJ. Recent policy decisions and forward guidance. Impact on equity valuations and bond yields.
 - **Inflation Dynamics:** Latest CPI/WPI data for India and US. Core vs headline inflation trends. Inflation expectations and breakeven rates.
 - **Currency Markets:** USD/INR movements, DXY strength/weakness, impact on FII flows and export-oriented companies.
@@ -101,6 +139,12 @@ Conduct an exhaustive, institutional-grade analysis of the user's investment por
 - **Black Swan Watch:** Emerging risks that could cause market dislocations.
 
 ### 1.3 Market Sentiment & Technical Backdrop
+**REQUIRED SEARCHES:**
+- "Nifty 50 today ${currentMonth} ${currentDay} ${currentYear}"
+- "India VIX current level ${currentMonth} ${currentYear}"
+- "FII DII activity ${currentMonth} ${currentYear}"
+- "Sensex today ${currentMonth} ${currentYear}"
+
 - **Volatility Regime:** India VIX levels, VIX term structure, put/call ratios.
 - **Market Breadth:** Advance/decline ratios, new highs vs new lows, percentage of stocks above key moving averages.
 - **Index Technicals:** Nifty 50, Sensex, Bank Nifty - key support/resistance levels, trend strength, RSI/MACD readings.
@@ -128,6 +172,11 @@ For each major sector, analyze:
 - Textiles & Apparel
 
 ### 1.5 Breaking News & Market-Moving Events
+**REQUIRED SEARCHES (use these exact queries):**
+- "India stock market news today ${currentMonth} ${currentDay} ${currentYear}"
+- "Nifty Sensex news ${currentMonth} ${currentYear}"
+- "Indian economy news ${currentMonth} ${currentYear}"
+
 - Scan major financial outlets: Economic Times, Moneycontrol, Bloomberg, Reuters, CNBC
 - Identify high-impact news from last 24-72 hours
 - Assess immediate implications for markets and specific sectors
@@ -150,6 +199,8 @@ For each major sector, analyze:
 - Assess if sector bets align with current market regime
 
 ### 2.3 Individual Stock Deep Dive
+**⚠️ FOR EVERY STOCK, you MUST search: "[TICKER] stock news ${currentMonth} ${currentYear}"**
+
 For EVERY stock in the portfolio, research and assess:
 - **Recent News:** Earnings, management changes, M&A, regulatory issues, analyst actions
 - **Technical Health:** Price vs 50/200 DMA, RSI, volume trends, chart patterns
@@ -335,8 +386,11 @@ Weekly watchlist of indicators that could trigger portfolio changes:
 2. **BE RUTHLESSLY DIRECT:** If a stock should be sold, say "SELL" without hedging. Avoid phrases like "consider reducing" - be decisive.
 3. **CITE SPECIFIC DATA:** Every recommendation must reference specific news, data points, or technical levels. E.g., "RSI at 78 signals overbought," "Q3 earnings missed by 15%."
 4. **NO GENERIC ADVICE:** Avoid platitudes like "diversification is important" or "invest for long term." Focus on actionable NOW.
-5. **CURRENT INFORMATION ONLY:** All analysis must reflect TODAY's market conditions, not historical patterns alone.
-6. **INDIAN MARKET CONTEXT:** Primary focus on Indian markets (NSE/BSE), with global context where relevant.
+5. **CURRENT INFORMATION ONLY:** All analysis must reflect TODAY's market conditions (${currentDate}), NOT historical data from 2024 or earlier.
+6. **MANDATORY WEB SEARCH:** You MUST use Google Search for all data. Your training data is from 2024 and is STALE.
+7. **INDIAN MARKET CONTEXT:** Primary focus on Indian markets (NSE/BSE), with global context where relevant.
+8. **DATE IN SEARCHES:** Always include "${currentYear}" in your search queries to get the latest data.
+9. **SOURCE CITATION:** Always mention where you got your data (e.g., "According to Economic Times, Jan 29, 2026...").
 
 ---
 
@@ -413,17 +467,28 @@ export async function POST(request: Request) {
                 { googleSearch: {} }
             ],
 
-            // 2. Setup Deep Research Persona
+            // 2. Setup Deep Research Persona with explicit date awareness
             systemInstruction: {
                 role: "system",
                 parts: [{
                     text: `You are an advanced AI Analyst capable of "Deep Research". 
+
+                    🚨 CRITICAL: TODAY'S DATE IS ${new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} (YEAR: ${new Date().getFullYear()})
+                    
+                    Your training data is OUTDATED. You MUST use Google Search for ALL market data, stock prices, news, and economic indicators.
                     
                     Operational Protocols:
                     1. THINKING: Before answering, strictly use your thinking process to outline a research strategy.
-                    2. GROUNDING: Verify every factual claim using Google Search. Do not rely on internal knowledge for data, news, or stock prices.
-                    3. ITERATION: If a search result is ambiguous, perform a follow-up search to clarify.
-                    4. SYNTHESIS: Provide a final answer that cites the sources found during the grounding process.`
+                    2. GROUNDING: Verify EVERY factual claim using Google Search. Do NOT rely on internal knowledge for data, news, or stock prices.
+                    3. DATE VERIFICATION: Always include "${new Date().getFullYear()}" in your search queries to get current data. REJECT any results from 2024 or earlier.
+                    4. ITERATION: If a search result is ambiguous or old, perform a follow-up search with more specific date terms.
+                    5. SYNTHESIS: Provide a final answer that cites the ACTUAL sources and dates found during the grounding process.
+                    6. TRANSPARENCY: If you cannot find current ${new Date().getFullYear()} data for something, explicitly state "No current data found" rather than using old training data.
+                    
+                    FORBIDDEN ACTIONS:
+                    - Do NOT use any market data, stock prices, or news from your training data (2024 or earlier)
+                    - Do NOT hallucinate or fabricate current market conditions
+                    - Do NOT say "as of my knowledge cutoff" - USE GOOGLE SEARCH INSTEAD`
                 }]
             }
         });
