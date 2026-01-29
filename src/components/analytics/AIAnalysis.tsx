@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,9 +31,11 @@ import {
     Briefcase,
     ChevronRight,
     Search,
+    FileDown,
 } from "lucide-react";
 import type { Holding } from "@/lib/types";
 import { AnalysisHistory } from "./AnalysisHistory";
+import { downloadElementAsPDF } from "@/lib/pdf-utils";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -55,8 +57,12 @@ export function AIAnalysis({ holdings }: AIAnalysisProps) {
     const [analysis, setAnalysis] = useState<string | null>(null);
     const [individualAnalyses, setIndividualAnalyses] = useState<Record<string, IndividualAnalysis>>({});
     const [saving, setSaving] = useState(false);
+    const [downloadingPDF, setDownloadingPDF] = useState(false);
     const [selectedHolding, setSelectedHolding] = useState<string>("");
     const [activeTab, setActiveTab] = useState<"portfolio" | "individual">("portfolio");
+
+    const portfolioRef = useRef<HTMLDivElement>(null);
+    const individualRef = useRef<HTMLDivElement>(null);
 
     // Sort holdings by value for the dropdown
     const sortedHoldings = [...holdings].sort((a, b) =>
@@ -92,7 +98,7 @@ export function AIAnalysis({ holdings }: AIAnalysisProps) {
         }
     };
 
-    const downloadAnalysis = (content: string, type: 'portfolio' | 'individual', symbol?: string) => {
+    const downloadAnalysisAsMarkdown = (content: string, type: 'portfolio' | 'individual', symbol?: string) => {
         if (!content) return;
 
         const element = document.createElement("a");
@@ -105,6 +111,25 @@ export function AIAnalysis({ holdings }: AIAnalysisProps) {
         document.body.appendChild(element);
         element.click();
         document.body.removeChild(element);
+    };
+
+    const downloadAnalysisAsPDF = async (type: 'portfolio' | 'individual', symbol?: string) => {
+        const ref = type === 'portfolio' ? portfolioRef : individualRef;
+        if (!ref.current) return;
+
+        try {
+            setDownloadingPDF(true);
+            const filename = type === 'individual' && symbol
+                ? `analysis-${symbol}-${new Date().getTime()}`
+                : `portfolio-analysis-${new Date().getTime()}`;
+
+            await downloadElementAsPDF(ref.current, filename);
+        } catch (err) {
+            console.error("Failed to download PDF:", err);
+            setError("Failed to generate PDF. Please try again.");
+        } finally {
+            setDownloadingPDF(false);
+        }
     };
 
     const runPortfolioAnalysis = async () => {
@@ -349,19 +374,32 @@ export function AIAnalysis({ holdings }: AIAnalysisProps) {
 
                         {analysis && (
                             <div className="flex flex-col h-[600px]">
-                                <div className="flex justify-end mb-3 pb-3 border-b">
+                                <div className="flex justify-end gap-2 mb-3 pb-3 border-b">
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => downloadAnalysis(analysis, 'portfolio')}
-                                        className="gap-2"
+                                        onClick={() => downloadAnalysisAsMarkdown(analysis, 'portfolio')}
+                                        title="Download as Markdown"
                                     >
-                                        <Download className="h-4 w-4" />
-                                        Download
+                                        <FileText className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={downloadingPDF}
+                                        onClick={() => downloadAnalysisAsPDF('portfolio')}
+                                        className="gap-2 bg-purple-500/5 hover:bg-purple-500/10 border-purple-200"
+                                    >
+                                        {downloadingPDF ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <FileDown className="h-4 w-4 text-purple-600" />
+                                        )}
+                                        {downloadingPDF ? "Generating..." : "Download PDF"}
                                     </Button>
                                 </div>
                                 <ScrollArea className="flex-1 pr-4">
-                                    <div className="markdown-prose">
+                                    <div className="markdown-prose" ref={portfolioRef}>
                                         <MarkdownRenderer content={analysis} />
                                     </div>
                                 </ScrollArea>
@@ -567,20 +605,33 @@ export function AIAnalysis({ holdings }: AIAnalysisProps) {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                onClick={() => downloadAnalysis(
+                                                onClick={() => downloadAnalysisAsMarkdown(
                                                     individualAnalyses[selectedHolding].analysis,
                                                     'individual',
                                                     selectedHolding
                                                 )}
-                                                className="gap-2"
+                                                title="Download as Markdown"
                                             >
-                                                <Download className="h-4 w-4" />
-                                                Download
+                                                <FileText className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={downloadingPDF}
+                                                onClick={() => downloadAnalysisAsPDF('individual', selectedHolding)}
+                                                className="gap-2 bg-blue-500/5 hover:bg-blue-500/10 border-blue-200"
+                                            >
+                                                {downloadingPDF ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <FileDown className="h-4 w-4 text-blue-600" />
+                                                )}
+                                                {downloadingPDF ? "Generating..." : "Download PDF"}
                                             </Button>
                                         </div>
                                     </div>
                                     <ScrollArea className="flex-1 pr-4">
-                                        <div className="markdown-prose">
+                                        <div className="markdown-prose" ref={individualRef}>
                                             <MarkdownRenderer content={individualAnalyses[selectedHolding].analysis} />
                                         </div>
                                     </ScrollArea>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     Dialog,
     DialogContent,
@@ -26,9 +26,12 @@ import {
     ChevronDown,
     Eye,
     Download,
+    FileText,
+    FileDown,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { downloadElementAsPDF } from "@/lib/pdf-utils";
 
 interface AnalysisItem {
     id: string;
@@ -47,7 +50,10 @@ export function AnalysisHistory() {
     );
     const [selectedContent, setSelectedContent] = useState<string | null>(null);
     const [contentLoading, setContentLoading] = useState(false);
+    const [downloadingPDF, setDownloadingPDF] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
+
+    const contentRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -102,7 +108,7 @@ export function AnalysisHistory() {
         }
     };
 
-    const downloadAnalysis = (item: AnalysisItem) => {
+    const downloadAnalysisAsMarkdown = (item: AnalysisItem) => {
         if (!selectedContent) return;
 
         const element = document.createElement("a");
@@ -112,6 +118,20 @@ export function AnalysisHistory() {
         document.body.appendChild(element);
         element.click();
         document.body.removeChild(element);
+    };
+
+    const downloadAnalysisAsPDF = async (item: AnalysisItem) => {
+        if (!contentRef.current) return;
+
+        try {
+            setDownloadingPDF(true);
+            const pdfFilename = item.filename.replace(".md", ".pdf");
+            await downloadElementAsPDF(contentRef.current, pdfFilename);
+        } catch (error) {
+            console.error("Failed to download PDF:", error);
+        } finally {
+            setDownloadingPDF(false);
+        }
     };
 
     return (
@@ -193,11 +213,18 @@ export function AnalysisHistory() {
                                                         View
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
-                                                        onClick={() => downloadAnalysis(item)}
-                                                        disabled={!selectedContent}
+                                                        onClick={() => downloadAnalysisAsMarkdown(item)}
+                                                        disabled={!selectedContent || selectedAnalysis?.id !== item.id}
                                                     >
-                                                        <Download className="mr-2 h-4 w-4" />
-                                                        Download
+                                                        <FileText className="mr-2 h-4 w-4" />
+                                                        Download MD
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={() => downloadAnalysisAsPDF(item)}
+                                                        disabled={!selectedContent || selectedAnalysis?.id !== item.id || downloadingPDF}
+                                                    >
+                                                        <FileDown className="mr-2 h-4 w-4" />
+                                                        Download PDF
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem
@@ -244,11 +271,24 @@ export function AnalysisHistory() {
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            onClick={() => downloadAnalysis(selectedAnalysis)}
-                                            className="gap-2"
+                                            onClick={() => downloadAnalysisAsMarkdown(selectedAnalysis)}
+                                            title="Download as Markdown"
                                         >
-                                            <Download className="h-4 w-4" />
-                                            <span className="hidden sm:inline">Download</span>
+                                            <FileText className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={downloadingPDF}
+                                            onClick={() => downloadAnalysisAsPDF(selectedAnalysis)}
+                                            className="gap-2 bg-purple-500/5 hover:bg-purple-500/10 border-purple-200"
+                                        >
+                                            {downloadingPDF ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <FileDown className="h-4 w-4 text-purple-600" />
+                                            )}
+                                            {downloadingPDF ? "Generating..." : "Download PDF"}
                                         </Button>
                                         <Button
                                             variant="destructive"
@@ -262,7 +302,7 @@ export function AnalysisHistory() {
                                     </div>
                                 </div>
                                 <ScrollArea className="flex-1 min-h-0">
-                                    <div className="pr-4 markdown-prose p-2">
+                                    <div className="pr-4 markdown-prose p-2" ref={contentRef}>
                                         {selectedContent && (
                                             <ReactMarkdown
                                                 remarkPlugins={[remarkGfm]}
