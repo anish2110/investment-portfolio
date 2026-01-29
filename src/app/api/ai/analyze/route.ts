@@ -19,6 +19,395 @@ interface Holding {
 // TODO: Add your Gemini API key here or use environment variable
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "YOUR_GEMINI_API_KEY_HERE";
 
+// ============================================================================
+// INDIVIDUAL HOLDING ANALYSIS PROMPT - HIGHLY DETAILED
+// ============================================================================
+const createIndividualHoldingPrompt = (holding: Holding, allHoldings: Holding[]) => {
+    const totalPortfolioValue = allHoldings.reduce((sum, h) => sum + h.quantity * h.last_price, 0);
+    const holdingValue = holding.quantity * holding.last_price;
+    const holdingInvestment = holding.quantity * holding.average_price;
+    const holdingPnlPercentage = ((holdingValue - holdingInvestment) / holdingInvestment * 100).toFixed(2);
+    const portfolioWeight = ((holdingValue / totalPortfolioValue) * 100).toFixed(2);
+
+    const currentDate = new Date().toLocaleDateString('en-IN', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().toLocaleDateString('en-IN', { month: 'long' });
+    const currentDay = new Date().getDate();
+
+    const isEquity = holding.type !== 'mf';
+    const holdingType = isEquity ? 'Stock/Equity' : 'Mutual Fund';
+
+    return `
+# 🔬 DEEP DIVE ANALYSIS: ${holding.tradingsymbol}
+**Analysis Date:** ${currentDate}
+**Holding Type:** ${holdingType}
+**Sector:** ${holding.sector || 'Unknown'}
+
+---
+
+## ⚠️ CRITICAL INSTRUCTIONS - MANDATORY WEB SEARCH ⚠️
+
+**TODAY'S DATE: ${currentDate} (Year: ${currentYear})**
+
+🚨 **YOU MUST SEARCH FOR ALL DATA - YOUR TRAINING DATA IS OUTDATED** 🚨
+
+**REQUIRED SEARCHES BEFORE ANALYSIS:**
+1. "${holding.tradingsymbol} stock news ${currentMonth} ${currentYear}"
+2. "${holding.tradingsymbol} quarterly results ${currentYear}"
+3. "${holding.tradingsymbol} analyst rating ${currentMonth} ${currentYear}"
+4. "${holding.tradingsymbol} price target ${currentYear}"
+5. "${holding.tradingsymbol} technical analysis ${currentMonth} ${currentYear}"
+6. "${holding.tradingsymbol} management commentary ${currentYear}"
+7. "${holding.tradingsymbol} institutional holdings ${currentYear}"
+8. "${holding.tradingsymbol} promoter holding ${currentYear}"
+${isEquity ? `9. "${holding.tradingsymbol} bulk block deals ${currentMonth} ${currentYear}"
+10. "${holding.tradingsymbol} corporate actions ${currentYear}"` : `9. "${holding.tradingsymbol} NAV performance ${currentMonth} ${currentYear}"
+10. "${holding.tradingsymbol} fund manager ${currentYear}"`}
+
+**STRICT RULES:**
+- ❌ NO data from 2024 or earlier
+- ❌ NO hallucinated or imagined information
+- ✅ CITE actual sources with dates
+- ✅ If no current data found, state explicitly
+
+---
+
+## 🎯 YOUR ROLE
+
+You are an elite equity research analyst with 20+ years of experience covering Indian markets. You have deep expertise in:
+- Fundamental analysis (DCF, comparables, sum-of-parts valuation)
+- Technical analysis (chart patterns, indicators, volume analysis)
+- Sector dynamics and competitive positioning
+- Management quality assessment
+- Corporate governance evaluation
+- Institutional flow analysis
+
+---
+
+## 📊 HOLDING DETAILS
+
+| Metric | Value |
+|--------|-------|
+| **Symbol** | ${holding.tradingsymbol} |
+| **Type** | ${holdingType} |
+| **Sector** | ${holding.sector || 'Unknown'} |
+| **Portfolio Weight** | ${portfolioWeight}% |
+| **P&L Status** | ${Number(holdingPnlPercentage) >= 0 ? '🟢 Profit' : '🔴 Loss'} (${holdingPnlPercentage}%) |
+| **Day Change** | ${holding.day_change_percentage?.toFixed(2) || 'N/A'}% |
+
+---
+
+## 📋 ANALYSIS FRAMEWORK - COMPLETE ALL SECTIONS
+
+### SECTION 1: COMPANY/FUND OVERVIEW & BUSINESS MODEL
+${isEquity ? `
+**REQUIRED RESEARCH:**
+- Company's core business segments and revenue mix
+- Market position and competitive moat
+- Key products/services and their market share
+- Geographic revenue breakdown
+- Business model sustainability
+
+**QUESTIONS TO ANSWER:**
+1. What are the company's primary revenue drivers?
+2. What is the company's competitive advantage (moat)?
+3. How defensible is the business model?
+4. What are the key risks to the business model?
+5. How is the company positioned vs competitors?
+` : `
+**REQUIRED RESEARCH:**
+- Fund's investment objective and strategy
+- Asset allocation and portfolio composition
+- Top holdings and sector allocation
+- Fund manager track record
+- Expense ratio and exit load
+
+**QUESTIONS TO ANSWER:**
+1. What is the fund's investment philosophy?
+2. How consistent is the fund's performance vs benchmark?
+3. What is the fund manager's experience and track record?
+4. How does expense ratio compare to category?
+5. What are the key risks of this fund?
+`}
+
+---
+
+### SECTION 2: RECENT NEWS & DEVELOPMENTS (LAST 30 DAYS)
+**MANDATORY SEARCHES:**
+- "${holding.tradingsymbol} latest news ${currentMonth} ${currentYear}"
+- "${holding.tradingsymbol} announcements ${currentMonth} ${currentYear}"
+
+**ANALYZE:**
+1. **Earnings/NAV Updates:** Latest quarterly results, earnings beats/misses
+2. **Management Commentary:** Key statements from management
+3. **Corporate Actions:** Dividends, bonuses, splits, buybacks
+4. **M&A Activity:** Any acquisition or divestiture news
+5. **Regulatory Updates:** Policy changes affecting the company/fund
+6. **Analyst Actions:** Rating changes, price target revisions
+7. **Institutional Activity:** FII/DII/MF buying or selling
+
+**FORMAT:**
+| Date | News Item | Impact | Source |
+|------|-----------|--------|--------|
+| [Date] | [News headline] | [🟢 Positive / 🔴 Negative / 🟡 Neutral] | [Source] |
+
+---
+
+### SECTION 3: FUNDAMENTAL ANALYSIS
+${isEquity ? `
+**REQUIRED DATA POINTS (SEARCH FOR CURRENT VALUES):**
+- P/E Ratio (TTM & Forward)
+- P/B Ratio
+- EV/EBITDA
+- ROE & ROCE
+- Debt/Equity Ratio
+- Revenue Growth (YoY)
+- Profit Growth (YoY)
+- Operating Margin
+- Net Margin
+- Free Cash Flow Yield
+
+**VALUATION ASSESSMENT:**
+| Metric | Current Value | Industry Avg | Assessment |
+|--------|--------------|--------------|------------|
+| P/E Ratio | [X] | [X] | [Undervalued/Fair/Overvalued] |
+| P/B Ratio | [X] | [X] | [Undervalued/Fair/Overvalued] |
+| EV/EBITDA | [X] | [X] | [Undervalued/Fair/Overvalued] |
+| ROE | [X]% | [X]% | [Strong/Average/Weak] |
+| Debt/Equity | [X] | [X] | [Low/Moderate/High Risk] |
+
+**EARNINGS QUALITY CHECK:**
+- Is earnings growth backed by revenue growth?
+- Are margins expanding or contracting?
+- Is FCF positive and growing?
+- Any red flags in receivables/inventory?
+` : `
+**REQUIRED DATA POINTS (SEARCH FOR CURRENT VALUES):**
+- 1-Year Return
+- 3-Year Return (CAGR)
+- 5-Year Return (CAGR)
+- Sharpe Ratio
+- Standard Deviation
+- Alpha vs Benchmark
+- Beta
+- Expense Ratio
+- AUM
+- Portfolio Turnover
+
+**PERFORMANCE ASSESSMENT:**
+| Metric | Fund Value | Category Avg | Benchmark | Assessment |
+|--------|-----------|--------------|-----------|------------|
+| 1Y Return | [X]% | [X]% | [X]% | [Outperformer/Average/Underperformer] |
+| 3Y CAGR | [X]% | [X]% | [X]% | [Outperformer/Average/Underperformer] |
+| Sharpe Ratio | [X] | [X] | - | [Good/Average/Poor] |
+| Alpha | [X]% | [X]% | - | [Positive/Negative] |
+`}
+
+---
+
+### SECTION 4: TECHNICAL ANALYSIS
+**REQUIRED SEARCHES:**
+- "${holding.tradingsymbol} chart analysis ${currentMonth} ${currentYear}"
+- "${holding.tradingsymbol} support resistance levels ${currentYear}"
+
+**ANALYZE:**
+1. **Trend Analysis:**
+   - Primary Trend (Long-term): [Uptrend/Downtrend/Sideways]
+   - Secondary Trend (Medium-term): [Uptrend/Downtrend/Sideways]
+   - Current Trend Strength: [Strong/Moderate/Weak]
+
+2. **Moving Averages:**
+   | MA | Level | Price Position | Signal |
+   |----|-------|----------------|--------|
+   | 20 DMA | [X] | [Above/Below] | [Bullish/Bearish] |
+   | 50 DMA | [X] | [Above/Below] | [Bullish/Bearish] |
+   | 200 DMA | [X] | [Above/Below] | [Bullish/Bearish] |
+
+3. **Key Technical Indicators:**
+   | Indicator | Value | Signal |
+   |-----------|-------|--------|
+   | RSI (14) | [X] | [Overbought/Neutral/Oversold] |
+   | MACD | [X] | [Bullish/Bearish Crossover] |
+   | ADX | [X] | [Strong/Weak Trend] |
+   | Bollinger Bands | [X] | [Near Upper/Middle/Lower] |
+
+4. **Support & Resistance Levels:**
+   | Type | Level 1 | Level 2 | Level 3 |
+   |------|---------|---------|---------|
+   | Resistance | [X] | [X] | [X] |
+   | Support | [X] | [X] | [X] |
+
+5. **Chart Patterns:**
+   - Any identifiable patterns (Head & Shoulders, Triangles, Flags, etc.)
+   - Pattern implications and target levels
+
+6. **Volume Analysis:**
+   - Recent volume vs average volume
+   - Volume confirmation of price moves
+   - Any accumulation/distribution signals
+
+---
+
+### SECTION 5: INSTITUTIONAL & PROMOTER ACTIVITY
+**REQUIRED SEARCHES:**
+- "${holding.tradingsymbol} FII DII holding ${currentYear}"
+- "${holding.tradingsymbol} promoter holding ${currentYear}"
+- "${holding.tradingsymbol} mutual fund holding ${currentYear}"
+
+**SHAREHOLDING PATTERN:**
+| Category | Current % | QoQ Change | Trend |
+|----------|----------|------------|-------|
+| Promoters | [X]% | [+/-X]% | [🟢 Increasing / 🔴 Decreasing / 🟡 Stable] |
+| FIIs | [X]% | [+/-X]% | [🟢 Increasing / 🔴 Decreasing / 🟡 Stable] |
+| DIIs | [X]% | [+/-X]% | [🟢 Increasing / 🔴 Decreasing / 🟡 Stable] |
+| Public | [X]% | [+/-X]% | [🟢 Increasing / 🔴 Decreasing / 🟡 Stable] |
+
+**KEY OBSERVATIONS:**
+- Promoter pledging status
+- Any bulk/block deals in last 3 months
+- MF scheme additions/exits
+- Notable institutional investors
+
+---
+
+### SECTION 6: SECTOR & COMPETITIVE ANALYSIS
+**REQUIRED SEARCHES:**
+- "${holding.sector} sector outlook India ${currentYear}"
+- "${holding.tradingsymbol} competitors ${currentYear}"
+
+**SECTOR DYNAMICS:**
+1. Current sector trend and outlook
+2. Key sector drivers and headwinds
+3. Government policy impact
+4. Global sector trends affecting India
+
+**COMPETITIVE POSITIONING:**
+| Metric | ${holding.tradingsymbol} | Competitor 1 | Competitor 2 | Industry Avg |
+|--------|--------------------------|--------------|--------------|--------------|
+| Market Share | [X]% | [X]% | [X]% | - |
+| Revenue Growth | [X]% | [X]% | [X]% | [X]% |
+| Profit Margin | [X]% | [X]% | [X]% | [X]% |
+| P/E Ratio | [X] | [X] | [X] | [X] |
+
+**COMPETITIVE ADVANTAGES:**
+- What makes this company better/worse than peers?
+- Sustainable competitive advantages (if any)
+- Key differentiators
+
+---
+
+### SECTION 7: RISK ASSESSMENT
+**COMPREHENSIVE RISK MATRIX:**
+
+| Risk Category | Risk Level | Details | Mitigation |
+|---------------|------------|---------|------------|
+| **Business Risk** | [Low/Med/High] | [Specific risk] | [How to mitigate] |
+| **Financial Risk** | [Low/Med/High] | [Debt, liquidity concerns] | [How to mitigate] |
+| **Valuation Risk** | [Low/Med/High] | [Is it expensive?] | [How to mitigate] |
+| **Sector Risk** | [Low/Med/High] | [Sector headwinds] | [How to mitigate] |
+| **Regulatory Risk** | [Low/Med/High] | [Policy changes] | [How to mitigate] |
+| **Governance Risk** | [Low/Med/High] | [Management/Board issues] | [How to mitigate] |
+| **Liquidity Risk** | [Low/Med/High] | [Trading volume concerns] | [How to mitigate] |
+| **Concentration Risk** | [Low/Med/High] | [Client/Product concentration] | [How to mitigate] |
+
+**RED FLAGS TO MONITOR:**
+- [ ] Promoter pledging
+- [ ] Related party transactions
+- [ ] Auditor qualifications
+- [ ] Frequent management changes
+- [ ] Declining cash flows
+- [ ] Rising debt levels
+- [ ] Governance controversies
+
+---
+
+### SECTION 8: CATALYST CALENDAR
+**UPCOMING EVENTS THAT COULD MOVE THE STOCK:**
+
+| Date | Event | Expected Impact | Watch For |
+|------|-------|-----------------|-----------|
+| [Date] | Quarterly Results | [High/Medium/Low] | [Key metrics] |
+| [Date] | AGM | [High/Medium/Low] | [Key announcements] |
+| [Date] | Dividend | [High/Medium/Low] | [Ex-date approach] |
+| [Date] | Sector Policy | [High/Medium/Low] | [Policy details] |
+
+---
+
+### SECTION 9: INVESTMENT THESIS
+
+**BULL CASE (Why this could outperform):**
+1. [Reason 1 with specific data]
+2. [Reason 2 with specific data]
+3. [Reason 3 with specific data]
+- **Bull Case Target:** [X]% upside potential
+- **Probability:** [X]%
+
+**BASE CASE (Most likely scenario):**
+1. [Reason 1 with specific data]
+2. [Reason 2 with specific data]
+3. [Reason 3 with specific data]
+- **Base Case Target:** [X]% return expected
+- **Probability:** [X]%
+
+**BEAR CASE (Why this could underperform):**
+1. [Risk 1 with specific data]
+2. [Risk 2 with specific data]
+3. [Risk 3 with specific data]
+- **Bear Case Target:** [X]% downside risk
+- **Probability:** [X]%
+
+---
+
+### SECTION 10: FINAL VERDICT & RECOMMENDATIONS
+
+#### 10.1 Overall Rating
+| Dimension | Score (1-10) | Comment |
+|-----------|--------------|---------|
+| **Fundamental Strength** | [X] | [One-line assessment] |
+| **Technical Setup** | [X] | [One-line assessment] |
+| **Valuation Attractiveness** | [X] | [One-line assessment] |
+| **Growth Potential** | [X] | [One-line assessment] |
+| **Risk-Reward Balance** | [X] | [One-line assessment] |
+| **OVERALL SCORE** | **[X/10]** | **[Summary verdict]** |
+
+#### 10.2 Investment Action
+| Current Weight | Recommended Weight | Action | Conviction |
+|----------------|-------------------|--------|------------|
+| ${portfolioWeight}% | [X]% | **[🟢 BUY MORE / 🟡 HOLD / 🟠 REDUCE / 🔴 SELL]** | [High/Medium/Low] |
+
+#### 10.3 Specific Recommendations
+1. **Immediate Action:** [What to do right now]
+2. **Price Targets:**
+   - 🎯 Target 1 (3 months): [Level] ([X]% upside)
+   - 🎯 Target 2 (12 months): [Level] ([X]% upside)
+3. **Stop Loss:** [Level] ([X]% downside from current)
+4. **Accumulation Zone:** [Range] (if applicable)
+5. **Key Triggers for Re-evaluation:** [Specific events]
+
+#### 10.4 Position Sizing Guidance
+- **Maximum Allocation:** [X]% of portfolio
+- **Scaling Strategy:** [How to add/reduce]
+- **Rebalancing Trigger:** [When to rebalance]
+
+---
+
+## 🚫 CONSTRAINTS
+1. **NO MONETARY VALUES** - Only percentages and allocations
+2. **CITE ALL SOURCES** - With dates
+3. **BE DECISIVE** - No wishy-washy recommendations
+4. **CURRENT DATA ONLY** - All from ${currentYear}
+
+---
+
+**NOW EXECUTE THE COMPLETE ANALYSIS FOR ${holding.tradingsymbol}**
+`;
+};
+
 // Comprehensive financial analysis prompt
 const createAnalysisPrompt = (holdings: Holding[]) => {
     const currentValue = holdings.reduce((sum, h) => sum + h.quantity * h.last_price, 0);
@@ -439,7 +828,7 @@ const analysisSchema = z.object({
 
 export async function POST(request: Request) {
     try {
-        const { holdings } = await request.json();
+        const { holdings, analysisType, symbol } = await request.json();
 
         if (!holdings || !Array.isArray(holdings)) {
             return NextResponse.json(
@@ -493,7 +882,22 @@ export async function POST(request: Request) {
             }
         });
 
-        const prompt = createAnalysisPrompt(holdings);
+        // Determine which prompt to use based on analysis type
+        const isIndividualAnalysis = analysisType === 'individual' && symbol;
+        let prompt: string;
+
+        if (isIndividualAnalysis) {
+            const targetHolding = holdings.find((h: Holding) => h.tradingsymbol === symbol);
+            if (!targetHolding) {
+                return NextResponse.json(
+                    { error: `Holding ${symbol} not found` },
+                    { status: 400 }
+                );
+            }
+            prompt = createIndividualHoldingPrompt(targetHolding, holdings);
+        } else {
+            prompt = createAnalysisPrompt(holdings);
+        }
 
         const response = await model.generateContent({
             contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -525,7 +929,11 @@ export async function POST(request: Request) {
             );
         }
 
-        return NextResponse.json({ analysis: responseText });
+        return NextResponse.json({
+            analysis: responseText,
+            type: isIndividualAnalysis ? 'individual' : 'portfolio',
+            symbol: isIndividualAnalysis ? symbol : undefined
+        });
     } catch (error) {
         console.error("Analysis error:", error);
         return NextResponse.json(

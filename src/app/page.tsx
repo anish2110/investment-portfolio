@@ -37,7 +37,7 @@ import {
   AIAnalysis,
 } from "@/components/analytics";
 import type { Holding } from "@/lib/types";
-import { getMutualFundCategory } from "@/lib/sectors";
+import { getMutualFundCategory, getSector } from "@/lib/sectors";
 
 export type AssetTypeFilter = "all" | "equity" | "mf";
 
@@ -92,7 +92,8 @@ export default function Dashboard() {
       const equityHoldings = (equityData.data || []).map((h: any) => ({
         ...h,
         type: 'equity' as const,
-        currency: 'INR'
+        currency: 'INR',
+        sector: getSector(h.tradingsymbol)
       }));
 
       const mfHoldings = (mfData.data || []).map((h: any) => ({

@@ -16,16 +16,19 @@ export async function GET() {
         // Sort by date (newest first) and extract metadata
         const analyses = mdFiles
             .map((file) => {
-                // Extract timestamp from filename (format: analysis-TIMESTAMP.md)
-                const match = file.match(/analysis-(\d+)\.md/);
+                // Extract symbol and timestamp from filename 
+                // format: analysis-TIMESTAMP.md OR analysis-SYMBOL-TIMESTAMP.md
+                const match = file.match(/analysis-(?:(.*)-)?(\d+)\.md/);
                 if (!match) return null;
 
-                const timestamp = parseInt(match[1]);
+                const symbol = match[1] || null;
+                const timestamp = parseInt(match[2]);
                 const date = new Date(timestamp);
 
                 return {
                     id: file.replace(".md", ""),
                     filename: file,
+                    symbol,
                     timestamp,
                     date: date.toISOString(),
                     displayDate: date.toLocaleDateString("en-IN", {
@@ -53,7 +56,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const { content } = await request.json();
+        const { content, symbol, type } = await request.json();
 
         if (!content) {
             return NextResponse.json(
@@ -67,11 +70,14 @@ export async function POST(request: Request) {
 
         // Generate filename with timestamp
         const timestamp = Date.now();
-        const filename = `analysis-${timestamp}.md`;
+        const filename = symbol
+            ? `analysis-${symbol.toUpperCase()}-${timestamp}.md`
+            : `analysis-${timestamp}.md`;
         const filepath = path.join(ANALYSES_DIR, filename);
 
         // Add metadata header to the markdown
-        const contentWithMetadata = `# Portfolio Analysis
+        const title = symbol ? `${symbol.toUpperCase()} Analysis` : "Portfolio Analysis";
+        const contentWithMetadata = `# ${title}
 **Generated:** ${new Date(timestamp).toLocaleString("en-IN")}
 
 ---

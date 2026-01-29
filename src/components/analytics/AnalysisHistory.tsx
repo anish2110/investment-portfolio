@@ -33,6 +33,7 @@ import remarkGfm from "remark-gfm";
 interface AnalysisItem {
     id: string;
     filename: string;
+    symbol?: string | null;
     timestamp: number;
     date: string;
     displayDate: string;
@@ -158,17 +159,22 @@ export function AnalysisHistory() {
                                                 onClick={() => viewAnalysis(item)}
                                                 className="flex-1"
                                             >
-                                                <div className="font-sm font-medium line-clamp-2">
+                                                <div className="font-sm font-medium flex items-center gap-1 mb-1">
+                                                    {item.symbol ? (
+                                                        <Badge variant="outline" className="px-1 py-0 h-4 text-[10px] bg-purple-500/10 text-purple-600 border-purple-200 uppercase">
+                                                            {item.symbol}
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge variant="outline" className="px-1 py-0 h-4 text-[10px] bg-blue-500/10 text-blue-600 border-blue-200">
+                                                            Portfolio
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <div className="font-sm font-medium line-clamp-1">
                                                     {item.displayDate}
                                                 </div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    {new Date(item.timestamp).toLocaleTimeString(
-                                                        "en-IN",
-                                                        {
-                                                            hour: "2-digit",
-                                                            minute: "2-digit",
-                                                        }
-                                                    )}
+                                                <div className="text-xs text-muted-foreground italic">
+                                                    {item.symbol ? 'Stock Analysis' : 'Portfolio Review'}
                                                 </div>
                                             </div>
                                             <DropdownMenu>
